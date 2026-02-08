@@ -88,7 +88,14 @@ export async function getRegionalAffordability(date?: string): Promise<any[]> {
       return [];
     }
     
-    return (data || []).map((region: any) => {
+    if (!data || data.length === 0) {
+      console.log('No regional affordability data found');
+      return [];
+    }
+    
+    console.log(`Fetched ${data.length} regional affordability records`);
+    
+    return data.map((region: any) => {
       const priceToIncomeRatio = region.median_family_income > 0 
         ? region.median_home_price / region.median_family_income 
         : 0;
@@ -135,7 +142,14 @@ export async function getBuilderExpenses(date?: string): Promise<any[]> {
       return [];
     }
     
-    return (data || []).map((expense: any) => {
+    if (!data || data.length === 0) {
+      console.log('No builder expenses data found');
+      return [];
+    }
+    
+    console.log(`Fetched ${data.length} builder expenses`);
+    
+    return data.map((expense: any) => {
       const trendDirection = expense.percent_change > 1 ? 'up' : expense.percent_change < -1 ? 'down' : 'stable';
       const trendStrength = Math.abs(expense.percent_change) > 10 ? 'major' : 
                            Math.abs(expense.percent_change) > 5 ? 'moderate' : 'minor';
@@ -188,8 +202,15 @@ export async function getHouseholdExpenses(date?: string): Promise<any[]> {
       return [];
     }
     
+    if (!data || data.length === 0) {
+      console.log('No household expenses data found');
+      return [];
+    }
+    
+    console.log(`Fetched ${data.length} household expenses`);
+    
     // Group by category
-    const grouped = (data || []).reduce((acc: any, item: any) => {
+    const grouped = data.reduce((acc: any, item: any) => {
       if (!acc[item.category]) {
         acc[item.category] = [];
       }
