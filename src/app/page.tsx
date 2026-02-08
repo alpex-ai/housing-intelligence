@@ -41,7 +41,7 @@ export default async function Home() {
       {/* Health Index */}
       <div className="mb-8">
         <HealthIndexCard 
-          score={healthIndex} 
+          score={healthIndex.score} 
           lastUpdated={latestMetrics.date}
         />
       </div>
