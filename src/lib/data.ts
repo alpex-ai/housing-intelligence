@@ -23,11 +23,23 @@ export async function getLatestHousingMetrics(): Promise<(HousingMetric & {
       return null;
     }
     
-    // Calculate health index
     const healthIndex = calculateHousingHealthIndex(data);
     
     return {
-      ...data,
+      id: data.id,
+      date: data.date,
+      median_home_value: data.median_home_value,
+      median_new_home_sale_price: data.median_new_home_sale_price,
+      mortgage_rate: data.mortgage_rate,
+      fed_funds_rate: data.fed_funds_rate,
+      treasury_yield_10y: data.treasury_yield_10y,
+      core_inflation: data.core_inflation,
+      affordability_index: data.affordability_index,
+      median_household_income: data.median_household_income,
+      total_inventory: data.total_inventory,
+      new_construction_inventory: data.new_construction_inventory,
+      building_permits: data.building_permits,
+      created_at: data.created_at,
       healthIndex,
     };
   } catch (e) {
@@ -57,10 +69,7 @@ export async function getHousingMetricsHistory(limit: number = 24): Promise<Hous
 }
 
 // Get regional affordability with enhanced data
-export async function getRegionalAffordability(date?: string): Promise<(RegionalAffordability & {
-  priceToIncomeRatio?: number;
-  monthlyPaymentToIncome?: number;
-})[]> {
+export async function getRegionalAffordability(date?: string): Promise<any[]> {
   try {
     let query = supabase
       .from('regional_affordability')
@@ -79,7 +88,6 @@ export async function getRegionalAffordability(date?: string): Promise<(Regional
       return [];
     }
     
-    // Enhance with calculated fields
     return (data || []).map((region: any) => {
       const priceToIncomeRatio = region.median_family_income > 0 
         ? region.median_home_price / region.median_family_income 
@@ -108,10 +116,7 @@ export async function getRegionalAffordability(date?: string): Promise<(Regional
 }
 
 // Get builder expenses with trend analysis
-export async function getBuilderExpenses(date?: string): Promise<(BuilderExpense & {
-  trendDirection: 'up' | 'down' | 'stable';
-  trendStrength: 'major' | 'moderate' | 'minor';
-})[]> {
+export async function getBuilderExpenses(date?: string): Promise<any[]> {
   try {
     let query = supabase
       .from('builder_expenses')
@@ -130,7 +135,6 @@ export async function getBuilderExpenses(date?: string): Promise<(BuilderExpense
       return [];
     }
     
-    // Enhance with trend indicators
     return (data || []).map((expense: any) => {
       const trendDirection = expense.percent_change > 1 ? 'up' : expense.percent_change < -1 ? 'down' : 'stable';
       const trendStrength = Math.abs(expense.percent_change) > 10 ? 'major' : 
@@ -156,12 +160,7 @@ export async function getBuilderExpenses(date?: string): Promise<(BuilderExpense
 }
 
 // Get household expenses grouped by category
-export async function getHouseholdExpenses(date?: string): Promise<{
-  category: string;
-  items: HouseholdExpense[];
-  categoryTotal: number;
-  categoryChange: number;
-}[]> {
+export async function getHouseholdExpenses(date?: string): Promise<any[]> {
   try {
     let query = supabase
       .from('household_expenses')
@@ -170,7 +169,6 @@ export async function getHouseholdExpenses(date?: string): Promise<{
     if (date) {
       query = query.eq('date', date);
     } else {
-      // Get latest date
       const { data: latestDate } = await supabase
         .from('household_expenses')
         .select('date')
@@ -191,15 +189,15 @@ export async function getHouseholdExpenses(date?: string): Promise<{
     }
     
     // Group by category
-    const grouped = (data || []).reduce((acc, item) => {
+    const grouped = (data || []).reduce((acc: any, item: any) => {
       if (!acc[item.category]) {
         acc[item.category] = [];
       }
       acc[item.category].push(item);
       return acc;
-    }, {} as Record<string, HouseholdExpense[]>);
+    }, {} as Record<string, any[]>);
     
-    return Object.entries(grouped).map(([category, items]) => {
+    return Object.entries(grouped).map(([category, items]: [string, any[]]) => {
       const categoryTotal = items.reduce((sum, item) => sum + item.current_price, 0);
       const categoryChange = items.reduce((sum, item) => sum + item.percent_change, 0) / items.length;
       
@@ -217,18 +215,7 @@ export async function getHouseholdExpenses(date?: string): Promise<{
 }
 
 // Get crash indicators with risk analysis
-export async function getCrashIndicators(date?: string): Promise<{
-  indicators: (CrashIndicator & {
-    severity: 'low' | 'medium' | 'high';
-  })[];
-  summary: {
-    totalPoints: number;
-    maxPoints: number;
-    riskLevel: 'Low' | 'Moderate' | 'Elevated' | 'High' | 'Critical';
-    riskPercent: number;
-    warnings: string[];
-  };
-}> {
+export async function getCrashIndicators(date?: string): Promise<any> {
   try {
     let query = supabase
       .from('crash_indicators')
@@ -256,7 +243,7 @@ export async function getCrashIndicators(date?: string): Promise<{
       current_value: ind.current_value,
       points: ind.points,
       risk_tier: ind.risk_tier,
-      severity: ind.points > 10 ? 'high' : ind.points > 5 ? 'medium' : 'low' as 'low' | 'medium' | 'high',
+      severity: ind.points > 10 ? 'high' : ind.points > 5 ? 'medium' : 'low',
     }));
     
     // Calculate summary
@@ -273,7 +260,7 @@ export async function getCrashIndicators(date?: string): Promise<{
     
     // Generate warnings
     const warnings: string[] = [];
-    indicators.forEach(ind => {
+    indicators.forEach((ind: any) => {
       if (ind.severity === 'high') {
         warnings.push(`${ind.variable_name}: ${ind.risk_tier}`);
       }
@@ -317,12 +304,7 @@ export async function getEconomicIndexHistory(limit: number = 24): Promise<Econo
 }
 
 // Get latest market momentum
-export async function getMarketMomentum(): Promise<{
-  priceMomentum: number;
-  inventoryMomentum: number;
-  rateMomentum: number;
-  overall: 'Accelerating' | 'Growing' | 'Stable' | 'Slowing' | 'Contracting';
-} | null> {
+export async function getMarketMomentum(): Promise<any | null> {
   try {
     const { data: current } = await supabase
       .from('housing_metrics')
@@ -349,29 +331,7 @@ export async function getMarketMomentum(): Promise<{
 }
 
 // Get dashboard summary
-export async function getDashboardSummary(): Promise<{
-  latestMetrics: HousingMetric | null;
-  healthIndex: {
-    score: number;
-    status: 'Healthy' | 'Caution' | 'Warning' | 'Critical';
-    message: string;
-  } | null;
-  marketMomentum: {
-    priceMomentum: number;
-    inventoryMomentum: number;
-    rateMomentum: number;
-    overall: 'Accelerating' | 'Growing' | 'Stable' | 'Slowing' | 'Contracting';
-  } | null;
-  crashRisk: {
-    totalPoints: number;
-    maxPoints: number;
-    riskLevel: 'Low' | 'Moderate' | 'Elevated' | 'High' | 'Critical';
-    riskPercent: number;
-    warnings: string[];
-  } | null;
-  regionalData: RegionalAffordability[];
-  builderCosts: BuilderExpense[];
-}> {
+export async function getDashboardSummary(): Promise<any> {
   const [
     latestWithHealth,
     momentum,
@@ -387,7 +347,22 @@ export async function getDashboardSummary(): Promise<{
   ]);
   
   return {
-    latestMetrics: latestWithHealth ? { ...latestWithHealth, healthIndex: undefined } as HousingMetric : null,
+    latestMetrics: latestWithHealth ? {
+      id: latestWithHealth.id,
+      date: latestWithHealth.date,
+      median_home_value: latestWithHealth.median_home_value,
+      median_new_home_sale_price: latestWithHealth.median_new_home_sale_price,
+      mortgage_rate: latestWithHealth.mortgage_rate,
+      fed_funds_rate: latestWithHealth.fed_funds_rate,
+      treasury_yield_10y: latestWithHealth.treasury_yield_10y,
+      core_inflation: latestWithHealth.core_inflation,
+      affordability_index: latestWithHealth.affordability_index,
+      median_household_income: latestWithHealth.median_household_income,
+      total_inventory: latestWithHealth.total_inventory,
+      new_construction_inventory: latestWithHealth.new_construction_inventory,
+      building_permits: latestWithHealth.building_permits,
+      created_at: latestWithHealth.created_at,
+    } : null,
     healthIndex: latestWithHealth?.healthIndex || null,
     marketMomentum: momentum,
     crashRisk: crashData?.summary || null,
