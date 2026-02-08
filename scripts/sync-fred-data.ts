@@ -4,7 +4,168 @@
 // Or scheduled via cron: 0 9 * * * cd /path/to/project && npm run sync-data
 
 import { createClient } from '@supabase/supabase-js';
-import { fetchAllHousingMetrics, fetchRegionalData, calculateAffordabilityMetrics } from '../src/lib/fred-api.js';
+
+// FRED API Configuration
+const FRED_API_KEY = process.env.FRED_API_KEY || '4bf29c1eba04aa0ca396ea6653ea0199';
+const FRED_BASE_URL = 'https://api.stlouisfed.org/fred';
+
+const FRED_SERIES = {
+  MEDIAN_HOME_PRICE: 'MSPUS',
+  NEW_HOME_PRICE: 'MSPNHSUS',
+  MORTGAGE_RATE_30Y: 'MORTGAGE30US',
+  FED_FUNDS_RATE: 'FEDFUNDS',
+  TREASURY_10Y: 'GS10',
+  CORE_INFLATION: 'CORESTICKM159SFRBATL',
+  HOUSING_INVENTORY: 'ACTLISCOU',
+  NEW_CONSTRUCTION_INVENTORY: 'NINVUSM156N',
+  BUILDING_PERMITS: 'PERMIT',
+  HOUSING_AFFORDABILITY: 'HAI',
+  MEDIAN_HOUSEHOLD_INCOME: 'MEHOINUSA672N',
+  MEDIAN_HOME_PRICE_NE: 'MEDLISPRIENT',
+  MEDIAN_HOME_PRICE_MW: 'MEDLISPRIMWST',
+  MEDIAN_HOME_PRICE_SO: 'MEDLISPRISOU',
+  MEDIAN_HOME_PRICE_WE: 'MEDLISPRIWST',
+} as const;
+
+interface FREDDataPoint {
+  date: string;
+  value: number;
+}
+
+async function fetchFRED(seriesId: string, startDate?: string, endDate?: string): Promise<FREDDataPoint[]> {
+  const params = new URLSearchParams({
+    series_id: seriesId,
+    api_key: FRED_API_KEY,
+    file_type: 'json',
+    sort_order: 'asc',
+  });
+  
+  if (startDate) params.append('observation_start', startDate);
+  if (endDate) params.append('observation_end', endDate);
+  
+  const url = `${FRED_BASE_URL}/series/observations?${params.toString()}`;
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`FRED API error: ${response.status}`);
+    
+    const data = await response.json();
+    
+    return data.observations
+      .filter((obs: any) => obs.value !== '.' && !isNaN(parseFloat(obs.value)))
+      .map((obs: any) => ({
+        date: obs.date,
+        value: parseFloat(obs.value),
+      }));
+  } catch (error) {
+    console.error(`Error fetching ${seriesId}:`, error);
+    return [];
+  }
+}
+
+// Fetch all key housing metrics
+async function fetchAllHousingMetrics(startDate?: string, endDate?: string) {
+  const [
+    homePrices,
+    newHomePrices,
+    mortgageRates,
+    fedFunds,
+    treasury10y,
+    coreInflation,
+    inventory,
+    newConstructionInv,
+    permits,
+    affordability,
+    income,
+  ] = await Promise.all([
+    fetchFRED(FRED_SERIES.MEDIAN_HOME_PRICE, startDate, endDate),
+    fetchFRED(FRED_SERIES.NEW_HOME_PRICE, startDate, endDate),
+    fetchFRED(FRED_SERIES.MORTGAGE_RATE_30Y, startDate, endDate),
+    fetchFRED(FRED_SERIES.FED_FUNDS_RATE, startDate, endDate),
+    fetchFRED(FRED_SERIES.TREASURY_10Y, startDate, endDate),
+    fetchFRED(FRED_SERIES.CORE_INFLATION, startDate, endDate),
+    fetchFRED(FRED_SERIES.HOUSING_INVENTORY, startDate, endDate),
+    fetchFRED(FRED_SERIES.NEW_CONSTRUCTION_INVENTORY, startDate, endDate),
+    fetchFRED(FRED_SERIES.BUILDING_PERMITS, startDate, endDate),
+    fetchFRED(FRED_SERIES.HOUSING_AFFORDABILITY, startDate, endDate),
+    fetchFRED(FRED_SERIES.MEDIAN_HOUSEHOLD_INCOME, startDate, endDate),
+  ]);
+  
+  // Merge by date
+  const allDates = new Set<string>();
+  
+  [homePrices, newHomePrices, mortgageRates, fedFunds, treasury10y, coreInflation, 
+   inventory, newConstructionInv, permits, affordability, income].forEach(series => {
+    series.forEach(point => allDates.add(point.date));
+  });
+  
+  const sortedDates = Array.from(allDates).sort();
+  
+  return sortedDates.map(date => {
+    const getValue = (series: FREDDataPoint[], defaultValue: number = 0) => {
+      const point = series.find(p => p.date === date);
+      return point ? point.value : defaultValue;
+    };
+    
+    return {
+      date,
+      median_home_value: getValue(homePrices),
+      median_new_home_sale_price: getValue(newHomePrices),
+      mortgage_rate: getValue(mortgageRates),
+      fed_funds_rate: getValue(fedFunds),
+      treasury_yield_10y: getValue(treasury10y),
+      core_inflation: getValue(coreInflation),
+      total_inventory: getValue(inventory),
+      new_construction_inventory: getValue(newConstructionInv),
+      building_permits: getValue(permits),
+      affordability_index: getValue(affordability, 100),
+      median_household_income: getValue(income, 80610),
+    };
+  });
+}
+
+// Fetch regional home prices
+async function fetchRegionalData(startDate?: string, endDate?: string) {
+  const [ne, mw, so, we] = await Promise.all([
+    fetchFRED(FRED_SERIES.MEDIAN_HOME_PRICE_NE, startDate, endDate),
+    fetchFRED(FRED_SERIES.MEDIAN_HOME_PRICE_MW, startDate, endDate),
+    fetchFRED(FRED_SERIES.MEDIAN_HOME_PRICE_SO, startDate, endDate),
+    fetchFRED(FRED_SERIES.MEDIAN_HOME_PRICE_WE, startDate, endDate),
+  ]);
+  
+  return {
+    northeast: ne,
+    midwest: mw,
+    south: so,
+    west: we,
+  };
+}
+
+// Calculate affordability metrics
+function calculateAffordabilityMetrics(
+  homePrice: number,
+  mortgageRate: number,
+  householdIncome: number,
+  downPaymentPercent: number = 10
+) {
+  const loanAmount = homePrice * (1 - downPaymentPercent / 100);
+  const monthlyRate = mortgageRate / 100 / 12;
+  const numPayments = 30 * 12;
+  
+  const monthlyPI = loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                    (Math.pow(1 + monthlyRate, numPayments) - 1);
+  const monthlyTI = 400;
+  const monthlyPayment = monthlyPI + monthlyTI;
+  
+  const qualifyingIncome = (monthlyPayment / 0.28) * 12;
+  const affordabilityScore = (householdIncome / qualifyingIncome) * 100;
+  
+  return {
+    monthlyPayment,
+    qualifyingIncome,
+    affordabilityScore,
+  };
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
