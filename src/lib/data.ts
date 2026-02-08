@@ -89,7 +89,14 @@ export async function getRegionalAffordability(date?: string): Promise<(Regional
         : 0;
       
       return {
-        ...region,
+        id: region.id,
+        date: region.date,
+        region: region.region,
+        median_home_price: region.median_home_price,
+        median_qualifying_income: region.median_qualifying_income,
+        median_family_income: region.median_family_income,
+        median_mortgage_payment: region.median_mortgage_payment,
+        affordability_score: region.affordability_score,
         priceToIncomeRatio: Math.round(priceToIncomeRatio * 10) / 10,
         monthlyPaymentToIncome: Math.round(monthlyPaymentToIncome * 10) / 10,
       };
@@ -124,13 +131,20 @@ export async function getBuilderExpenses(date?: string): Promise<(BuilderExpense
     }
     
     // Enhance with trend indicators
-    return (data || []).map(expense => {
+    return (data || []).map((expense: any) => {
       const trendDirection = expense.percent_change > 1 ? 'up' : expense.percent_change < -1 ? 'down' : 'stable';
       const trendStrength = Math.abs(expense.percent_change) > 10 ? 'major' : 
                            Math.abs(expense.percent_change) > 5 ? 'moderate' : 'minor';
       
       return {
-        ...expense,
+        id: expense.id,
+        date: expense.date,
+        material_name: expense.material_name,
+        current_price: expense.current_price,
+        start_price: expense.start_price,
+        percent_change: expense.percent_change,
+        total_change: expense.total_change,
+        status: expense.status,
         trendDirection,
         trendStrength,
       };
@@ -234,8 +248,14 @@ export async function getCrashIndicators(date?: string): Promise<{
     }
     
     // Enhance with severity
-    const indicators = (data || []).map(ind => ({
-      ...ind,
+    const indicators = (data || []).map((ind: any) => ({
+      id: ind.id,
+      date: ind.date,
+      variable_name: ind.variable_name,
+      category: ind.category,
+      current_value: ind.current_value,
+      points: ind.points,
+      risk_tier: ind.risk_tier,
       severity: ind.points > 10 ? 'high' : ind.points > 5 ? 'medium' : 'low' as 'low' | 'medium' | 'high',
     }));
     
