@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, HardHat, ShoppingCart, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Home, HardHat, ShoppingCart, AlertTriangle, TrendingUp, User, Sparkles } from 'lucide-react';
+import { useAuth } from './AuthProvider';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: Home },
@@ -14,6 +15,7 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   return (
     <nav className="bg-alpex-card border-b border-alpex-border">
@@ -44,14 +46,57 @@ export function Navigation() {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Advisor Link - Highlighted */}
+            <Link
+              href="/advisor"
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                pathname.startsWith('/advisor')
+                  ? "bg-alpex-green/20 text-alpex-green border border-alpex-green/50"
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
+              )}
+            >
+              <Sparkles className="w-4 h-4" />
+              Advisor
+            </Link>
           </div>
 
-          {/* Mobile menu button */}
-          <button className="md:hidden text-gray-400 hover:text-white">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
+          {/* Auth Buttons */}
+          <div className="flex items-center gap-3">
+            {user ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/advisor"
+                  className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  {user.full_name || user.email}
+                </Link>
+                <button
+                  onClick={signOut}
+                  className="px-3 py-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/auth/signin"
+                  className="px-3 py-1.5 text-sm text-gray-300 hover:text-white transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="px-4 py-1.5 text-sm bg-alpex-green text-black font-medium rounded-lg hover:bg-alpex-green/90 transition-colors"
+                >
+                  Get Started
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>
