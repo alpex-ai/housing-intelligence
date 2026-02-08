@@ -80,7 +80,7 @@ export async function getRegionalAffordability(date?: string): Promise<(Regional
     }
     
     // Enhance with calculated fields
-    return (data || []).map(region => {
+    return (data || []).map((region: any) => {
       const priceToIncomeRatio = region.median_family_income > 0 
         ? region.median_home_price / region.median_family_income 
         : 0;
