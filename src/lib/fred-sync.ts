@@ -1,4 +1,8 @@
-import { supabase } from './supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const FRED_API_KEY = process.env.FRED_API_KEY;
 
@@ -65,7 +69,7 @@ export async function syncData() {
     ]);
 
     // Insert into database
-    const { error } = await supabase.from('housing_metrics').upsert({
+    const data = {
       date: today,
       median_home_value: parseFloat(medianHomePrice?.value || '0'),
       median_new_home_sale_price: parseFloat(medianNewHomePrice?.value || '0'),
@@ -78,9 +82,11 @@ export async function syncData() {
       total_inventory: parseFloat(totalInventory?.value || '0'),
       new_construction_inventory: parseFloat(newConstructionInventory?.value || '0'),
       building_permits: parseFloat(buildingPermits?.value || '0'),
-    }, {
-      onConflict: 'date'
-    });
+    };
+
+    const { error } = await supabase
+      .from('housing_metrics')
+      .upsert(data as any, { onConflict: 'date' });
 
     if (error) {
       throw new Error(`Database error: ${error.message}`);
