@@ -1,17 +1,9 @@
 import { getHouseholdExpenses } from '@/lib/data';
-import { ExpenseCategoryCard } from '@/components/ExpenseCategoryCard';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import Link from 'next/link';
 
 export default async function HouseholdExpensesPage() {
-  const expenses = await getHouseholdExpenses();
-
-  // Group by category
-  const categories = expenses.reduce((acc, expense) => {
-    if (!acc[expense.category]) acc[expense.category] = [];
-    acc[expense.category].push(expense);
-    return acc;
-  }, {} as Record<string, typeof expenses>);
+  const categories = await getHouseholdExpenses();
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -28,12 +20,45 @@ export default async function HouseholdExpensesPage() {
         </p>
       </div>
 
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {categories.slice(0, 4).map((cat) => (
+          <div key={cat.category} className="bg-alpex-card rounded-lg p-4 border border-alpex-border">
+            <h3 className="text-sm font-medium text-gray-400">{cat.category}</h3>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-white">
+                {formatCurrency(cat.categoryTotal)}
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className={`text-sm font-medium ${
+                cat.categoryChange > 5 ? 'text-alpex-red' :
+                cat.categoryChange > 0 ? 'text-alpex-yellow' :
+                'text-alpex-green'
+              }`}>
+                {formatPercent(cat.categoryChange)}
+              </span>
+              <span className="text-xs text-gray-500 ml-2">avg change</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Category Cards */}
-      {Object.entries(categories).map(([category, items]) => (
-        <div key={category} className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">{category}</h2>
+      {categories.map((category) => (
+        <div key={category.category} className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">{category.category}</h2>
+            <span className={`text-sm font-medium ${
+              category.categoryChange > 5 ? 'text-alpex-red' :
+              category.categoryChange > 0 ? 'text-alpex-yellow' :
+              'text-alpex-green'
+            }`}>
+              {formatPercent(category.categoryChange)} avg
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((item) => (
+            {category.items.map((item) => (
               <div 
                 key={item.item_name} 
                 className="bg-alpex-card rounded-lg p-4 border border-alpex-border hover:border-alpex-border/80 transition-colors"
