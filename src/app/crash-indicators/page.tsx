@@ -7,9 +7,9 @@ export default async function CrashIndicatorsPage() {
   const indicators = crashData.indicators;
 
   // Group by risk tier
-  const critical = indicators.filter(i => i.category === 'Critical');
-  const major = indicators.filter(i => i.category === 'Major');
-  const minor = indicators.filter(i => i.category === 'Minor');
+  const critical = indicators.filter((i: {category: string}) => i.category === 'Critical');
+  const major = indicators.filter((i: {category: string}) => i.category === 'Major');
+  const minor = indicators.filter((i: {category: string}) => i.category === 'Minor');
 
   const getRiskColor = (tier?: string | null) => {
     if (tier?.includes('Low')) return 'text-green-500';
@@ -62,7 +62,7 @@ export default async function CrashIndicatorsPage() {
               <div className="mt-2 text-sm text-gray-400">
                 <p className="font-medium">Warnings:</p>
                 <ul className="list-disc list-inside">
-                  {crashData.summary.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                  {crashData.summary.warnings.map((w: string, i: number) => <li key={i}>{w}</li>)}
                 </ul>
               </div>
             )}
@@ -80,7 +80,7 @@ export default async function CrashIndicatorsPage() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-white mb-4">Critical Indicators</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {critical.map((indicator) => (
+          {critical.map((indicator: {variable_name: string; current_value: number; risk_tier?: string | null}) => (
             <div 
               key={indicator.variable_name} 
               className={`rounded-lg p-4 border ${getRiskBg(indicator.risk_tier)}`}
@@ -108,7 +108,7 @@ export default async function CrashIndicatorsPage() {
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-white mb-4">Major Indicators</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {major.map((indicator) => (
+          {major.map((indicator: {variable_name: string; current_value: number; risk_tier?: string | null}) => (
             <div 
               key={indicator.variable_name} 
               className="bg-alpex-card rounded-lg p-4 border border-alpex-border"

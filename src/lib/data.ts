@@ -24,22 +24,22 @@ export async function getLatestHousingMetrics(): Promise<(HousingMetric & {
     }
     
     const healthIndex = calculateHousingHealthIndex(data);
+    const metric = data as HousingMetric;
     
     return {
-      id: data.id,
-      date: data.date,
-      median_home_value: data.median_home_value,
-      median_new_home_sale_price: data.median_new_home_sale_price,
-      mortgage_rate: data.mortgage_rate,
-      fed_funds_rate: data.fed_funds_rate,
-      treasury_yield_10y: data.treasury_yield_10y,
-      core_inflation: data.core_inflation,
-      affordability_index: data.affordability_index,
-      median_household_income: data.median_household_income,
-      total_inventory: data.total_inventory,
-      new_construction_inventory: data.new_construction_inventory,
-      building_permits: data.building_permits,
-      created_at: data.created_at,
+      id: metric.id,
+      date: metric.date,
+      median_home_value: metric.median_home_value,
+      median_new_home_sale_price: metric.median_new_home_sale_price,
+      mortgage_rate: metric.mortgage_rate,
+      fed_funds_rate: metric.fed_funds_rate,
+      treasury_yield_10y: metric.treasury_yield_10y,
+      core_inflation: metric.core_inflation,
+      affordability_index: metric.affordability_index,
+      median_household_income: metric.median_household_income,
+      total_inventory: metric.total_inventory,
+      new_construction_inventory: metric.new_construction_inventory,
+      building_permits: metric.building_permits,
       healthIndex,
     };
   } catch (e) {
@@ -177,7 +177,7 @@ export async function getHouseholdExpenses(date?: string): Promise<any[]> {
         .maybeSingle();
       
       if (latestDate) {
-        query = query.eq('date', latestDate.date);
+        query = query.eq('date', (latestDate as {date: string}).date);
       }
     }
     
@@ -197,13 +197,14 @@ export async function getHouseholdExpenses(date?: string): Promise<any[]> {
       return acc;
     }, {} as Record<string, any[]>);
     
-    return Object.entries(grouped).map(([category, items]: [string, any[]]) => {
-      const categoryTotal = items.reduce((sum, item) => sum + item.current_price, 0);
-      const categoryChange = items.reduce((sum, item) => sum + item.percent_change, 0) / items.length;
-      
+    return Object.entries(grouped).map(([category, items]) => {
+      const itemsArray = items as any[];
+      const categoryTotal = itemsArray.reduce((sum, item) => sum + item.current_price, 0);
+      const categoryChange = itemsArray.reduce((sum, item) => sum + item.percent_change, 0) / itemsArray.length;
+
       return {
         category,
-        items,
+        items: itemsArray,
         categoryTotal: Math.round(categoryTotal),
         categoryChange: Math.round(categoryChange * 10) / 10,
       };
@@ -313,11 +314,11 @@ export async function getMarketMomentum(): Promise<any | null> {
       .limit(1)
       .maybeSingle();
     
-    const { data: previous } = await supabase
+    const { data: previous } = await (supabase
       .from('housing_metrics')
       .select('*')
       .order('date', { ascending: false })
-      .limit(1)
+      .limit(1) as any)
       .offset(1)
       .maybeSingle();
     
@@ -361,7 +362,6 @@ export async function getDashboardSummary(): Promise<any> {
       total_inventory: latestWithHealth.total_inventory,
       new_construction_inventory: latestWithHealth.new_construction_inventory,
       building_permits: latestWithHealth.building_permits,
-      created_at: latestWithHealth.created_at,
     } : null,
     healthIndex: latestWithHealth?.healthIndex || null,
     marketMomentum: momentum,

@@ -22,7 +22,7 @@ export default async function HouseholdExpensesPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {categories.slice(0, 4).map((cat) => (
+        {categories.slice(0, 4).map((cat: {category: string; categoryTotal: number; categoryChange: number}) => (
           <div key={cat.category} className="bg-alpex-card rounded-lg p-4 border border-alpex-border">
             <h3 className="text-sm font-medium text-gray-400">{cat.category}</h3>
             <div className="mt-2">
@@ -45,7 +45,7 @@ export default async function HouseholdExpensesPage() {
       </div>
 
       {/* Category Cards */}
-      {categories.map((category) => (
+      {categories.map((category: {category: string; categoryChange: number; items: Array<{item_name: string; current_price: number; start_price: number; percent_change: number}>}) => (
         <div key={category.category} className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-white">{category.category}</h2>
@@ -58,7 +58,7 @@ export default async function HouseholdExpensesPage() {
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {category.items.map((item) => (
+            {category.items.map((item: {item_name: string; current_price: number; start_price: number; percent_change: number}) => (
               <div 
                 key={item.item_name} 
                 className="bg-alpex-card rounded-lg p-4 border border-alpex-border hover:border-alpex-border/80 transition-colors"

@@ -15,7 +15,13 @@ export function RegionalTable({ data }: RegionalTableProps) {
     const regionEntry = data.find(d => d.region.toLowerCase() === region.toLowerCase());
     return {
       region,
-      ...regionEntry,
+      id: regionEntry?.id || '',
+      date: regionEntry?.date || '',
+      median_home_price: regionEntry?.median_home_price,
+      median_qualifying_income: regionEntry?.median_qualifying_income,
+      median_family_income: regionEntry?.median_family_income,
+      median_mortgage_payment: regionEntry?.median_mortgage_payment,
+      affordability_score: regionEntry?.affordability_score,
     };
   });
 
