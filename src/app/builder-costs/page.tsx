@@ -2,6 +2,9 @@ import { getBuilderExpenses } from '@/lib/data';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import Link from 'next/link';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default async function BuilderCostsPage() {
   let expenses: any[] = [];
   let error: string | null = null;
