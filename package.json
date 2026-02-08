@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:types": "supabase gen types typescript --project-id lmmpvvtkzlnblvlflhpk --schema public > src/lib/database.types.ts",
+    "db:setup": "ts-node --esm scripts/setup-database.ts",
     "sync-data": "ts-node --esm scripts/sync-fred-data.ts",
     "import-data": "ts-node --esm scripts/import-data.ts"
   },
