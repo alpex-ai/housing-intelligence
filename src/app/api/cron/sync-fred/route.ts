@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { syncData } from '../../../../../scripts/sync-fred-data';
+import { syncData } from '@/lib/fred-sync';
 
 // Vercel Cron Job Handler
 // Runs daily at 9 AM UTC to sync FRED data
