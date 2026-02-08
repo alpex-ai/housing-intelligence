@@ -2,19 +2,24 @@ import { supabase } from './supabase';
 import { HousingMetric, RegionalAffordability, BuilderExpense, HouseholdExpense, CrashIndicator, EconomicIndex } from './types';
 
 export async function getLatestHousingMetrics(): Promise<HousingMetric | null> {
-  const { data, error } = await supabase
-    .from('housing_metrics')
-    .select('*')
-    .order('date', { ascending: false })
-    .limit(1)
-    .single();
-  
-  if (error) {
-    console.error('Error fetching housing metrics:', error);
+  try {
+    const { data, error } = await supabase
+      .from('housing_metrics')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error fetching housing metrics:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (e) {
+    console.error('Exception fetching housing metrics:', e);
     return null;
   }
-  
-  return data;
 }
 
 export async function getHousingMetricsHistory(limit: number = 24): Promise<HousingMetric[]> {
