@@ -1,4 +1,4 @@
-import { getLatestHousingMetrics, getHousingMetricsHistory, getRegionalAffordability, calculateHousingHealthIndex } from '@/lib/data';
+import { getLatestHousingMetrics, getHousingMetricsHistory, getRegionalAffordability } from '@/lib/data';
 import { MetricCard } from '@/components/MetricCard';
 import { HealthIndexCard } from '@/components/HealthIndexCard';
 import { PriceChart } from '@/components/PriceChart';
@@ -23,7 +23,7 @@ export default async function Home() {
     );
   }
 
-  const healthIndex = calculateHousingHealthIndex(latestMetrics);
+  const healthIndex = latestMetrics.healthIndex;
   const prevMetrics = metricsHistory.length > 1 ? metricsHistory[metricsHistory.length - 2] : null;
   
   return (

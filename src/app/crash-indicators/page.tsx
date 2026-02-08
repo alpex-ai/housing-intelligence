@@ -3,7 +3,8 @@ import { CrashIndicatorGauge } from '@/components/CrashIndicatorGauge';
 import Link from 'next/link';
 
 export default async function CrashIndicatorsPage() {
-  const indicators = await getCrashIndicators();
+  const crashData = await getCrashIndicators();
+  const indicators = crashData.indicators;
 
   // Group by risk tier
   const critical = indicators.filter(i => i.category === 'Critical');
@@ -40,15 +41,38 @@ export default async function CrashIndicatorsPage() {
       </div>
 
       {/* Overall Status */}
-      <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-6 mb-8">
+      <div className={`${
+        crashData.summary.riskLevel === 'Low' ? 'bg-green-500/20 border-green-500/50' :
+        crashData.summary.riskLevel === 'Moderate' ? 'bg-yellow-500/20 border-yellow-500/50' :
+        crashData.summary.riskLevel === 'Elevated' ? 'bg-orange-500/20 border-orange-500/50' :
+        'bg-red-500/20 border-red-500/50'
+      } border rounded-lg p-6 mb-8`}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-medium text-white">Current Market Status</h2>
             <p className="text-gray-300 mt-1">
-              Risk Score: <span className="text-green-400 font-semibold">Low</span>
+              Risk Score: <span className={`font-semibold ${
+                crashData.summary.riskLevel === 'Low' ? 'text-green-400' :
+                crashData.summary.riskLevel === 'Moderate' ? 'text-yellow-400' :
+                crashData.summary.riskLevel === 'Elevated' ? 'text-orange-400' :
+                'text-red-400'
+              }`}>{crashData.summary.riskLevel} ({crashData.summary.riskPercent}%)</span>
             </p>
+            {crashData.summary.warnings.length > 0 && (
+              <div className="mt-2 text-sm text-gray-400">
+                <p className="font-medium">Warnings:</p>
+                <ul className="list-disc list-inside">
+                  {crashData.summary.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                </ul>
+              </div>
+            )}
           </div>
-          <div className="text-4xl">🟢</div>
+          <div className="text-4xl">
+            {crashData.summary.riskLevel === 'Low' ? '🟢' :
+             crashData.summary.riskLevel === 'Moderate' ? '🟡' :
+             crashData.summary.riskLevel === 'Elevated' ? '🟠' :
+             crashData.summary.riskLevel === 'High' ? '🔴' : '⚫'}
+          </div>
         </div>
       </div>
 
