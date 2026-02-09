@@ -1,119 +1,125 @@
 const SUPABASE_URL = 'https://lmmpvvtkzlnblvlflhpk.supabase.co';
 const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtbXB2dnRremxuYmx2bGZsaHBrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTc1MDYwNiwiZXhwIjoyMDg1MzI2NjA2fQ.BlomgWsoVJXsxfF713kO3jTlBXmJnvWZv6EX3ial0FM';
 
-const sql = `
--- Metro-level Zillow ZHVI data
-create table if not exists metro_zhvi (
-  id uuid default gen_random_uuid() primary key,
-  region_id integer not null,
-  size_rank integer,
-  region_name text not null,
-  region_type text not null,
-  state_name text,
-  date date not null,
-  home_value decimal(12,2),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique(region_id, date)
-);
+const { createClient } = require('@supabase/supabase-js');
 
--- User profiles (extends auth.users)
-create table if not exists user_profiles (
-  id uuid references auth.users on delete cascade primary key,
-  email text not null,
-  full_name text,
-  current_city text,
-  current_city_region_id integer references metro_zhvi(region_id),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- User's saved homes/properties
-create table if not exists user_homes (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  nickname text,
-  address text,
-  city text not null,
-  state text not null,
-  zip_code text,
-  region_id integer references metro_zhvi(region_id),
-  purchase_price decimal(12,2),
-  purchase_date date,
-  current_mortgage_balance decimal(12,2),
-  property_type text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- Appraisal history for homes
-create table if not exists home_appraisals (
-  id uuid default gen_random_uuid() primary key,
-  home_id uuid references user_homes on delete cascade not null,
-  appraisal_date date not null,
-  appraised_value decimal(12,2) not null,
-  appraisal_source text,
-  notes text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- Saved scenarios (comparisons)
-create table if not exists user_scenarios (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade not null,
-  name text not null,
-  home_id uuid references user_homes on delete set null,
-  target_city text not null,
-  target_region_id integer references metro_zhvi(region_id),
-  scenario_type text not null,
-  analysis_results jsonb,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- Indexes
-create index if not exists idx_metro_zhvi_region_date on metro_zhvi(region_id, date desc);
-create index if not exists idx_metro_zhvi_name on metro_zhvi(region_name);
-create index if not exists idx_user_homes_user on user_homes(user_id);
-create index if not exists idx_home_appraisals_home on home_appraisals(home_id, appraisal_date desc);
-create index if not exists idx_user_scenarios_user on user_scenarios(user_id);
-
--- RLS Policies
-alter table metro_zhvi enable row level security;
-alter table user_profiles enable row level security;
-alter table user_homes enable row level security;
-alter table home_appraisals enable row level security;
-alter table user_scenarios enable row level security;
-
-create policy if not exists "Allow public read access" on metro_zhvi for select using (true);
-create policy if not exists "Users can view own profile" on user_profiles for select using (auth.uid() = id);
-create policy if not exists "Users can update own profile" on user_profiles for update using (auth.uid() = id);
-create policy if not exists "Users can insert own profile" on user_profiles for insert with check (auth.uid() = id);
-create policy if not exists "Users can view own homes" on user_homes for select using (auth.uid() = user_id);
-create policy if not exists "Users can manage own homes" on user_homes for all using (auth.uid() = user_id);
-create policy if not exists "Users can view home appraisals for own homes" on home_appraisals for select using (home_id in (select id from user_homes where user_id = auth.uid()));
-create policy if not exists "Users can manage home appraisals for own homes" on home_appraisals for all using (home_id in (select id from user_homes where user_id = auth.uid()));
-create policy if not exists "Users can view own scenarios" on user_scenarios for select using (auth.uid() = user_id);
-create policy if not exists "Users can manage own scenarios" on user_scenarios for all using (auth.uid() = user_id);
-`;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
 
 async function runMigration() {
   console.log('Running SQL migration...');
   
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Prefer': 'resolution=merge-duplicates'
-    },
-    body: JSON.stringify({ query: sql })
-  });
+  const sql = `
+-- Metro-level Zillow ZHVI data
+CREATE TABLE IF NOT EXISTS metro_zhvi (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  region_id INTEGER NOT NULL,
+  size_rank INTEGER,
+  region_name TEXT NOT NULL,
+  region_type TEXT NOT NULL,
+  state_name TEXT,
+  date DATE NOT NULL,
+  home_value DECIMAL(12,2),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(region_id, date)
+);
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email TEXT NOT NULL,
+  full_name TEXT,
+  current_city TEXT,
+  current_city_region_id INTEGER REFERENCES metro_zhvi(region_id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_homes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  nickname TEXT,
+  address TEXT,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  zip_code TEXT,
+  region_id INTEGER REFERENCES metro_zhvi(region_id),
+  purchase_price DECIMAL(12,2),
+  purchase_date DATE,
+  current_mortgage_balance DECIMAL(12,2),
+  property_type TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS home_appraisals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  home_id UUID REFERENCES user_homes ON DELETE CASCADE NOT NULL,
+  appraisal_date DATE NOT NULL,
+  appraised_value DECIMAL(12,2) NOT NULL,
+  appraisal_source TEXT,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_scenarios (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  home_id UUID REFERENCES user_homes ON DELETE SET NULL,
+  target_city TEXT NOT NULL,
+  target_region_id INTEGER REFERENCES metro_zhvi(region_id),
+  scenario_type TEXT NOT NULL,
+  analysis_results JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_metro_zhvi_region_date ON metro_zhvi(region_id, date DESC);
+CREATE INDEX IF NOT EXISTS idx_metro_zhvi_name ON metro_zhvi(region_name);
+CREATE INDEX IF NOT EXISTS idx_user_homes_user ON user_homes(user_id);
+CREATE INDEX IF NOT EXISTS idx_home_appraisals_home ON home_appraisals(home_id, appraisal_date DESC);
+CREATE INDEX IF NOT EXISTS idx_user_scenarios_user ON user_scenarios(user_id);
+
+-- RLS Policies
+ALTER TABLE metro_zhvi ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_homes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE home_appraisals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_scenarios ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Allow public read access" ON metro_zhvi;
+DROP POLICY IF EXISTS "Users can view own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON user_profiles;
+DROP POLICY IF EXISTS "Users can view own homes" ON user_homes;
+DROP POLICY IF EXISTS "Users can manage own homes" ON user_homes;
+DROP POLICY IF EXISTS "Users can view home appraisals for own homes" ON home_appraisals;
+DROP POLICY IF EXISTS "Users can manage home appraisals for own homes" ON home_appraisals;
+DROP POLICY IF EXISTS "Users can view own scenarios" ON user_scenarios;
+DROP POLICY IF EXISTS "Users can manage own scenarios" ON user_scenarios;
+
+CREATE POLICY "Allow public read access" ON metro_zhvi FOR SELECT USING (true);
+CREATE POLICY "Users can view own profile" ON user_profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON user_profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON user_profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can view own homes" ON user_homes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own homes" ON user_homes FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can view home appraisals for own homes" ON home_appraisals FOR SELECT USING (home_id IN (SELECT id FROM user_homes WHERE user_id = auth.uid()));
+CREATE POLICY "Users can manage home appraisals for own homes" ON home_appraisals FOR ALL USING (home_id IN (SELECT id FROM user_homes WHERE user_id = auth.uid()));
+CREATE POLICY "Users can view own scenarios" ON user_scenarios FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own scenarios" ON user_scenarios FOR ALL USING (auth.uid() = user_id);
+`;
   
-  if (response.ok) {
-    console.log('Migration completed successfully');
-  } else {
-    const error = await response.text();
+  const { error } = await supabase.rpc('exec_sql', { sql });
+  
+  if (error) {
     console.error('Migration failed:', error);
+    process.exit(1);
+  } else {
+    console.log('Migration completed successfully');
   }
 }
 
