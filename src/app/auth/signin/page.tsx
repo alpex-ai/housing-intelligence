@@ -1,15 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useAuth } from '@/components/AuthProvider';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function SignInPage() {
+export const dynamic = 'force-dynamic';
+
+function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/advisor';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,6 +26,10 @@ export default function SignInPage() {
     
     if (error) {
       setError(error.message);
+    } else {
+      // Successful sign-in - redirect
+      router.push(redirect);
+      router.refresh();
     }
     
     setLoading(false);
@@ -81,5 +91,13 @@ export default function SignInPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md mx-auto px-4 py-16 text-center text-white">Loading...</div>}>
+      <SignInForm />
+    </Suspense>
   );
 }
