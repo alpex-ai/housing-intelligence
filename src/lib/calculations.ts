@@ -18,13 +18,13 @@ export function calculateHousingHealthIndex(metrics: HousingMetric): {
   // 1. Affordability Score (0-100)
   // Based on affordability index (125 = healthy baseline)
   const affordabilityScore = Math.min(100, Math.max(0, 
-    (metrics.affordability_index / 125) * 100
+    ((metrics.affordability_index ?? 0) / 125) * 100
   ));
 
   // 2. Supply Score (0-100)
   // Based on months of inventory (6 months = balanced market)
-  const monthsOfSupply = metrics.total_inventory > 0 
-    ? metrics.total_inventory / (metrics.building_permits * 12 || 1)
+  const monthsOfSupply = (metrics.total_inventory ?? 0) > 0 
+    ? (metrics.total_inventory ?? 0) / ((metrics.building_permits ?? 0) * 12 || 1)
     : 0;
   const supplyScore = monthsOfSupply > 0
     ? Math.min(100, Math.max(0, 100 - Math.abs(monthsOfSupply - 6) * 10))
@@ -33,7 +33,7 @@ export function calculateHousingHealthIndex(metrics: HousingMetric): {
   // 3. Risk Score (0-100, inverted - higher is better)
   // Based on mortgage rate and economic indicators
   const riskScore = Math.min(100, Math.max(0,
-    100 - (metrics.mortgage_rate - 4) * 10 - (metrics.core_inflation - 2) * 5
+    100 - ((metrics.mortgage_rate ?? 0) - 4) * 10 - ((metrics.core_inflation ?? 0) - 2) * 5
   ));
 
   // 4. Momentum Score (0-100)
@@ -176,8 +176,8 @@ export function calculateCrashRisk(
   riskPercent: number;
   warnings: string[];
 } {
-  const maxPoints = indicators.reduce((sum, ind) => sum + ind.points, 0);
-  const totalPoints = indicators.reduce((sum, ind) => sum + (ind.points || 0), 0);
+  const maxPoints = indicators.reduce((sum, ind) => sum + (ind.points ?? 0), 0);
+  const totalPoints = indicators.reduce((sum, ind) => sum + (ind.points ?? 0), 0);
   
   const riskPercent = (totalPoints / maxPoints) * 100;
 
@@ -197,13 +197,13 @@ export function calculateCrashRisk(
   // Generate warnings based on metrics
   const warnings: string[] = [];
   
-  if (metrics.mortgage_rate > 7) {
+  if ((metrics.mortgage_rate ?? 0) > 7) {
     warnings.push('High mortgage rates reducing affordability');
   }
-  if (metrics.affordability_index < 100) {
+  if ((metrics.affordability_index ?? 0) < 100) {
     warnings.push('Affordability index below sustainable level');
   }
-  if (metrics.core_inflation > 4) {
+  if ((metrics.core_inflation ?? 0) > 4) {
     warnings.push('Elevated inflation threatening purchasing power');
   }
 
@@ -324,12 +324,12 @@ export function calculateMarketMomentum(
     };
   }
 
-  const priceMomentum = ((currentMetrics.median_home_value - previousMetrics.median_home_value) 
-    / previousMetrics.median_home_value) * 100;
+  const priceMomentum = (((currentMetrics.median_home_value ?? 0) - (previousMetrics.median_home_value ?? 0)) 
+    / (previousMetrics.median_home_value ?? 1)) * 100;
   
-  const inventoryMomentum = currentMetrics.total_inventory - previousMetrics.total_inventory;
+  const inventoryMomentum = (currentMetrics.total_inventory ?? 0) - (previousMetrics.total_inventory ?? 0);
   
-  const rateMomentum = currentMetrics.mortgage_rate - previousMetrics.mortgage_rate;
+  const rateMomentum = (currentMetrics.mortgage_rate ?? 0) - (previousMetrics.mortgage_rate ?? 0);
 
   // Determine overall momentum
   let overall: 'Accelerating' | 'Growing' | 'Stable' | 'Slowing' | 'Contracting';

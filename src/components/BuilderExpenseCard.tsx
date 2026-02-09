@@ -8,25 +8,26 @@ interface BuilderExpenseCardProps {
 }
 
 export function BuilderExpenseCard({ expense }: BuilderExpenseCardProps) {
-  const isRising = expense.percent_change > 0;
-  const isMajor = Math.abs(expense.percent_change) > 10;
+  const percentChange = expense.percent_change ?? 0;
+  const isRising = percentChange > 0;
+  const isMajor = Math.abs(percentChange) > 10;
 
   return (
     <div className="bg-alpex-card rounded-lg p-4 border border-alpex-border">
       <h3 className="text-sm font-medium text-gray-400">{expense.material_name}</h3>
       <div className="mt-2">
         <span className="text-2xl font-bold text-white">
-          {formatCurrency(expense.current_price)}
+          {formatCurrency(expense.current_price ?? 0)}
         </span>
       </div>
       <div className="mt-2 flex items-center gap-2">
         <span className={`text-sm font-medium ${
           isRising ? 'text-alpex-red' : 'text-alpex-green'
         }`}>
-          {isRising ? '↑' : '↓'} {formatPercent(expense.percent_change)}
+          {isRising ? '↑' : '↓'} {formatPercent(percentChange)}
         </span>
         <span className="text-xs text-gray-500">
-          from {formatCurrency(expense.start_price)}
+          from {formatCurrency(expense.start_price ?? 0)}
         </span>
       </div>
       {isMajor && (

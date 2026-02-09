@@ -24,22 +24,21 @@ export async function getLatestHousingMetrics(): Promise<(HousingMetric & {
     }
     
     const healthIndex = calculateHousingHealthIndex(data);
-    const metric = data as HousingMetric;
     
     return {
-      id: metric.id,
-      date: metric.date,
-      median_home_value: metric.median_home_value,
-      median_new_home_sale_price: metric.median_new_home_sale_price,
-      mortgage_rate: metric.mortgage_rate,
-      fed_funds_rate: metric.fed_funds_rate,
-      treasury_yield_10y: metric.treasury_yield_10y,
-      core_inflation: metric.core_inflation,
-      affordability_index: metric.affordability_index,
-      median_household_income: metric.median_household_income,
-      total_inventory: metric.total_inventory,
-      new_construction_inventory: metric.new_construction_inventory,
-      building_permits: metric.building_permits,
+      id: data.id,
+      date: data.date,
+      median_home_value: data.median_home_value ?? null,
+      median_new_home_sale_price: data.median_new_home_sale_price ?? null,
+      mortgage_rate: data.mortgage_rate ?? null,
+      fed_funds_rate: data.fed_funds_rate ?? null,
+      treasury_yield_10y: data.treasury_yield_10y ?? null,
+      core_inflation: data.core_inflation ?? null,
+      affordability_index: data.affordability_index ?? null,
+      median_household_income: data.median_household_income ?? null,
+      total_inventory: data.total_inventory ?? null,
+      new_construction_inventory: data.new_construction_inventory ?? null,
+      building_permits: data.building_permits ?? null,
       healthIndex,
     };
   } catch (e) {
@@ -61,7 +60,21 @@ export async function getHousingMetricsHistory(limit: number = 24): Promise<Hous
       return [];
     }
     
-    return data || [];
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      date: item.date,
+      median_home_value: item.median_home_value ?? null,
+      median_new_home_sale_price: item.median_new_home_sale_price ?? null,
+      mortgage_rate: item.mortgage_rate ?? null,
+      fed_funds_rate: item.fed_funds_rate ?? null,
+      treasury_yield_10y: item.treasury_yield_10y ?? null,
+      core_inflation: item.core_inflation ?? null,
+      affordability_index: item.affordability_index ?? null,
+      median_household_income: item.median_household_income ?? null,
+      total_inventory: item.total_inventory ?? null,
+      new_construction_inventory: item.new_construction_inventory ?? null,
+      building_permits: item.building_permits ?? null,
+    }));
   } catch (e) {
     console.error('Exception fetching housing metrics history:', e);
     return [];
@@ -96,22 +109,23 @@ export async function getRegionalAffordability(date?: string): Promise<any[]> {
     console.log(`Fetched ${data.length} regional affordability records`);
     
     return data.map((region: any) => {
-      const priceToIncomeRatio = region.median_family_income > 0 
-        ? region.median_home_price / region.median_family_income 
+      const medianFamilyIncome = region.median_family_income ?? 1;
+      const priceToIncomeRatio = medianFamilyIncome > 0 
+        ? (region.median_home_price ?? 0) / medianFamilyIncome
         : 0;
-      const monthlyPaymentToIncome = region.median_family_income > 0
-        ? (region.median_mortgage_payment / (region.median_family_income / 12)) * 100
+      const monthlyPaymentToIncome = medianFamilyIncome > 0
+        ? ((region.median_mortgage_payment ?? 0) / (medianFamilyIncome / 12)) * 100
         : 0;
       
       return {
         id: region.id,
         date: region.date,
         region: region.region,
-        median_home_price: region.median_home_price,
-        median_qualifying_income: region.median_qualifying_income,
-        median_family_income: region.median_family_income,
-        median_mortgage_payment: region.median_mortgage_payment,
-        affordability_score: region.affordability_score,
+        median_home_price: region.median_home_price ?? null,
+        median_qualifying_income: region.median_qualifying_income ?? null,
+        median_family_income: region.median_family_income ?? null,
+        median_mortgage_payment: region.median_mortgage_payment ?? null,
+        affordability_score: region.affordability_score ?? null,
         priceToIncomeRatio: Math.round(priceToIncomeRatio * 10) / 10,
         monthlyPaymentToIncome: Math.round(monthlyPaymentToIncome * 10) / 10,
       };
@@ -150,19 +164,20 @@ export async function getBuilderExpenses(date?: string): Promise<any[]> {
     console.log(`Fetched ${data.length} builder expenses`);
     
     return data.map((expense: any) => {
-      const trendDirection = expense.percent_change > 1 ? 'up' : expense.percent_change < -1 ? 'down' : 'stable';
-      const trendStrength = Math.abs(expense.percent_change) > 10 ? 'major' : 
-                           Math.abs(expense.percent_change) > 5 ? 'moderate' : 'minor';
+      const percentChange = expense.percent_change ?? 0;
+      const trendDirection = percentChange > 1 ? 'up' : percentChange < -1 ? 'down' : 'stable';
+      const trendStrength = Math.abs(percentChange) > 10 ? 'major' : 
+                           Math.abs(percentChange) > 5 ? 'moderate' : 'minor';
       
       return {
         id: expense.id,
         date: expense.date,
         material_name: expense.material_name,
-        current_price: expense.current_price,
-        start_price: expense.start_price,
-        percent_change: expense.percent_change,
-        total_change: expense.total_change,
-        status: expense.status,
+        current_price: expense.current_price ?? null,
+        start_price: expense.start_price ?? null,
+        percent_change: expense.percent_change ?? null,
+        total_change: expense.total_change ?? null,
+        status: expense.status ?? null,
         trendDirection,
         trendStrength,
       };
@@ -220,12 +235,20 @@ export async function getHouseholdExpenses(date?: string): Promise<any[]> {
     
     return Object.entries(grouped).map(([category, items]) => {
       const itemsArray = items as any[];
-      const categoryTotal = itemsArray.reduce((sum, item) => sum + item.current_price, 0);
-      const categoryChange = itemsArray.reduce((sum, item) => sum + item.percent_change, 0) / itemsArray.length;
+      const categoryTotal = itemsArray.reduce((sum, item) => sum + (item.current_price ?? 0), 0);
+      const categoryChange = itemsArray.reduce((sum, item) => sum + (item.percent_change ?? 0), 0) / itemsArray.length;
 
       return {
         category,
-        items: itemsArray,
+        items: itemsArray.map((item: any) => ({
+          id: item.id,
+          date: item.date,
+          category: item.category,
+          item_name: item.item_name,
+          current_price: item.current_price ?? null,
+          start_price: item.start_price ?? null,
+          percent_change: item.percent_change ?? null,
+        })),
         categoryTotal: Math.round(categoryTotal),
         categoryChange: Math.round(categoryChange * 10) / 10,
       };
@@ -262,15 +285,15 @@ export async function getCrashIndicators(date?: string): Promise<any> {
       date: ind.date,
       variable_name: ind.variable_name,
       category: ind.category,
-      current_value: ind.current_value,
-      points: ind.points,
-      risk_tier: ind.risk_tier,
-      severity: ind.points > 10 ? 'high' : ind.points > 5 ? 'medium' : 'low',
+      current_value: ind.current_value ?? null,
+      points: ind.points ?? 0,
+      risk_tier: ind.risk_tier ?? null,
+      severity: (ind.points ?? 0) > 10 ? 'high' : (ind.points ?? 0) > 5 ? 'medium' : 'low',
     }));
     
     // Calculate summary
     const maxPoints = 100;
-    const totalPoints = indicators.reduce((sum, ind) => sum + ind.points, 0);
+    const totalPoints = indicators.reduce((sum, ind) => sum + (ind.points ?? 0), 0);
     const riskPercent = Math.round((totalPoints / maxPoints) * 100);
     
     let riskLevel: 'Low' | 'Moderate' | 'Elevated' | 'High' | 'Critical';
@@ -318,7 +341,15 @@ export async function getEconomicIndexHistory(limit: number = 24): Promise<Econo
       return [];
     }
     
-    return data || [];
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      date: item.date,
+      index_value: item.index_value ?? null,
+      mom_change: item.mom_change ?? null,
+      mom_percent: item.mom_percent ?? null,
+      yoy_change: item.yoy_change ?? null,
+      yoy_percent: item.yoy_percent ?? null,
+    }));
   } catch (e) {
     console.error('Exception fetching economic index:', e);
     return [];
@@ -335,13 +366,14 @@ export async function getMarketMomentum(): Promise<any | null> {
       .limit(1)
       .maybeSingle();
     
-    const { data: previous } = await (supabase
+    const { data: previousData } = await supabase
       .from('housing_metrics')
       .select('*')
       .order('date', { ascending: false })
-      .limit(1) as any)
-      .offset(1)
+      .range(1, 1)
       .maybeSingle();
+    
+    const previous = previousData;
     
     if (!current) return null;
     
@@ -372,17 +404,17 @@ export async function getDashboardSummary(): Promise<any> {
     latestMetrics: latestWithHealth ? {
       id: latestWithHealth.id,
       date: latestWithHealth.date,
-      median_home_value: latestWithHealth.median_home_value,
-      median_new_home_sale_price: latestWithHealth.median_new_home_sale_price,
-      mortgage_rate: latestWithHealth.mortgage_rate,
-      fed_funds_rate: latestWithHealth.fed_funds_rate,
-      treasury_yield_10y: latestWithHealth.treasury_yield_10y,
-      core_inflation: latestWithHealth.core_inflation,
-      affordability_index: latestWithHealth.affordability_index,
-      median_household_income: latestWithHealth.median_household_income,
-      total_inventory: latestWithHealth.total_inventory,
-      new_construction_inventory: latestWithHealth.new_construction_inventory,
-      building_permits: latestWithHealth.building_permits,
+      median_home_value: latestWithHealth.median_home_value ?? null,
+      median_new_home_sale_price: latestWithHealth.median_new_home_sale_price ?? null,
+      mortgage_rate: latestWithHealth.mortgage_rate ?? null,
+      fed_funds_rate: latestWithHealth.fed_funds_rate ?? null,
+      treasury_yield_10y: latestWithHealth.treasury_yield_10y ?? null,
+      core_inflation: latestWithHealth.core_inflation ?? null,
+      affordability_index: latestWithHealth.affordability_index ?? null,
+      median_household_income: latestWithHealth.median_household_income ?? null,
+      total_inventory: latestWithHealth.total_inventory ?? null,
+      new_construction_inventory: latestWithHealth.new_construction_inventory ?? null,
+      building_permits: latestWithHealth.building_permits ?? null,
     } : null,
     healthIndex: latestWithHealth?.healthIndex || null,
     marketMomentum: momentum,

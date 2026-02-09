@@ -98,27 +98,27 @@ export default async function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard
           title="Median Home Price"
-          value={formatCurrency(latestMetrics.median_home_value)}
-          change={prevMetrics ? ((latestMetrics.median_home_value - prevMetrics.median_home_value) / prevMetrics.median_home_value * 100) : 0}
+          value={formatCurrency(latestMetrics.median_home_value ?? 0)}
+          change={prevMetrics?.median_home_value ? ((latestMetrics.median_home_value ?? 0 - prevMetrics.median_home_value) / prevMetrics.median_home_value * 100) : 0}
           target="$385,000"
         />
         <MetricCard
           title="New Construction"
-          value={formatCurrency(latestMetrics.median_new_home_sale_price)}
-          change={prevMetrics ? ((latestMetrics.median_new_home_sale_price - prevMetrics.median_new_home_sale_price) / prevMetrics.median_new_home_sale_price * 100) : 0}
+          value={formatCurrency(latestMetrics.median_new_home_sale_price ?? 0)}
+          change={prevMetrics?.median_new_home_sale_price ? ((latestMetrics.median_new_home_sale_price ?? 0 - prevMetrics.median_new_home_sale_price) / prevMetrics.median_new_home_sale_price * 100) : 0}
           target="$401,800"
         />
         <MetricCard
           title="Mortgage Rate"
-          value={`${latestMetrics.mortgage_rate}%`}
-          change={prevMetrics ? (latestMetrics.mortgage_rate - prevMetrics.mortgage_rate) : 0}
+          value={`${latestMetrics.mortgage_rate ?? 0}%`}
+          change={prevMetrics?.mortgage_rate ? (latestMetrics.mortgage_rate ?? 0 - prevMetrics.mortgage_rate) : 0}
           target="6.72%"
           isPercent
         />
         <MetricCard
           title="Affordability Index"
-          value={latestMetrics.affordability_index.toFixed(1)}
-          change={prevMetrics ? ((latestMetrics.affordability_index - prevMetrics.affordability_index) / prevMetrics.affordability_index * 100) : 0}
+          value={(latestMetrics.affordability_index ?? 0).toFixed(1)}
+          change={prevMetrics?.affordability_index ? ((latestMetrics.affordability_index ?? 0 - prevMetrics.affordability_index) / prevMetrics.affordability_index * 100) : 0}
           target="125"
         />
       </div>
