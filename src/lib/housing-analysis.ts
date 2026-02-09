@@ -74,6 +74,11 @@ export function projectHomeValue(
 }
 
 // Get metro trend data
+interface MetroData {
+  home_value: number;
+  date: string;
+}
+
 export async function getMetroTrend(
   supabase: ReturnType<typeof createServerClient>,
   regionId: number
@@ -85,7 +90,7 @@ export async function getMetroTrend(
     .eq('region_id', regionId)
     .order('date', { ascending: false })
     .limit(1)
-    .single();
+    .single() as { data: MetroData | null };
 
   if (!current) return null;
 
@@ -100,7 +105,7 @@ export async function getMetroTrend(
     .lte('date', sixMonthsAgo.toISOString().split('T')[0])
     .order('date', { ascending: false })
     .limit(1)
-    .single();
+    .single() as { data: { home_value: number } | null };
 
   // Get 12 months ago
   const twelveMonthsAgo = new Date(current.date);
@@ -113,7 +118,7 @@ export async function getMetroTrend(
     .lte('date', twelveMonthsAgo.toISOString().split('T')[0])
     .order('date', { ascending: false })
     .limit(1)
-    .single();
+    .single() as { data: { home_value: number } | null };
 
   const currentValue = current.home_value;
   const value6MonthsAgo = data6mo?.home_value || currentValue;
@@ -159,6 +164,17 @@ export async function findMetroByCity(
 }
 
 // Main scenario analysis
+interface HomeData {
+  id: string;
+  purchase_price: number | null;
+  current_mortgage_balance: number | null;
+  region_id: number | null;
+  home_appraisals: {
+    appraised_value: number;
+    appraisal_date: string;
+  }[];
+}
+
 export async function analyzeScenario(
   supabase: ReturnType<typeof createServerClient>,
   params: {
@@ -182,7 +198,7 @@ export async function analyzeScenario(
     .eq('id', homeId)
     .order('appraisal_date', { referencedTable: 'home_appraisals', ascending: false })
     .limit(1)
-    .single();
+    .single() as { data: HomeData | null };
 
   if (!home) {
     throw new Error('Home not found');
@@ -208,13 +224,13 @@ export async function analyzeScenario(
   if (home.region_id) {
     currentMetro = await getMetroTrend(supabase, home.region_id);
     if (currentMetro) {
-      const metroInfo = await supabase
+      const { data: metroInfo } = await supabase
         .from('metro_zhvi')
         .select('region_name')
         .eq('region_id', home.region_id)
         .limit(1)
-        .single();
-      currentMetro.regionName = metroInfo.data?.region_name || 'Unknown';
+        .single() as { data: { region_name: string } | null };
+      currentMetro.regionName = metroInfo?.region_name || 'Unknown';
     }
   }
 

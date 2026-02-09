@@ -1,6 +1,14 @@
 import { createServerClient } from '@/lib/supabase-server';
 import { MetroComparison } from '@/components/MetroComparison';
 
+export const dynamic = 'force-dynamic';
+
+interface Metro {
+  region_id: number;
+  region_name: string;
+  state_name: string | null;
+}
+
 export default async function ComparePage() {
   const supabase = createServerClient();
   
@@ -10,11 +18,16 @@ export default async function ComparePage() {
     .select('region_id, region_name, state_name')
     .eq('region_type', 'msa')
     .order('region_name')
-    .limit(1000);
+    .limit(1000) as { data: Metro[] | null };
 
   // Get unique list
+  const seen = new Set<number>();
   const uniqueMetros = metros 
-    ? [...new Map(metros.map(m => [m.region_id, m])).values()]
+    ? metros.filter((m: Metro) => {
+        if (seen.has(m.region_id)) return false;
+        seen.add(m.region_id);
+        return true;
+      })
     : [];
 
   return (

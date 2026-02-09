@@ -89,7 +89,12 @@ export default function NewScenarioPage() {
       .limit(500);
 
     if (data) {
-      const unique = [...new Map(data.map(m => [m.region_id, m])).values()];
+      const seen = new Set<number>();
+      const unique = data.filter((m: any) => {
+        if (seen.has(m.region_id)) return false;
+        seen.add(m.region_id);
+        return true;
+      });
       setMetros(unique);
     }
   };

@@ -2,8 +2,23 @@ import { createServerClient } from '@/lib/supabase-server';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: { id: string };
+}
+
+interface Scenario {
+  id: string;
+  name: string;
+  created_at: string;
+  scenario_type: string;
+  analysis_results: any;
+  user_homes: {
+    nickname: string | null;
+    city: string;
+    state: string;
+  } | null;
 }
 
 export default async function ScenarioDetailPage({ params }: Props) {
@@ -23,7 +38,7 @@ export default async function ScenarioDetailPage({ params }: Props) {
     `)
     .eq('id', params.id)
     .eq('user_id', session.user.id)
-    .single();
+    .single() as { data: Scenario | null };
 
   if (!scenario) {
     notFound();

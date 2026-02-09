@@ -2,6 +2,24 @@ import { createServerClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
+interface Home {
+  id: string;
+  nickname: string | null;
+  city: string;
+  state: string;
+  purchase_price: number | null;
+  current_mortgage_balance: number | null;
+}
+
+interface Scenario {
+  id: string;
+  name: string;
+  scenario_type: string;
+  target_city: string;
+}
+
 export default async function AdvisorPage() {
   const supabase = createServerClient();
   
@@ -16,14 +34,14 @@ export default async function AdvisorPage() {
     .from('user_homes')
     .select('*')
     .eq('user_id', session.user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }) as { data: Home[] | null };
 
   // Get user's scenarios
   const { data: scenarios } = await supabase
     .from('user_scenarios')
     .select('*')
     .eq('user_id', session.user.id)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false }) as { data: Scenario[] | null };
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -60,7 +78,7 @@ export default async function AdvisorPage() {
         >
           <div className="text-3xl mb-3">🎯</div>
           <h3 className="text-lg font-semibold text-white mb-1">Create Scenario</h3>
-          <p className="text-sm text-gray-400">"Should I sell and move?"</p>
+          <p className="text-sm text-gray-400">&ldquo;Should I sell and move?&rdquo;</p>
         </Link>
       </div>
 
@@ -78,7 +96,7 @@ export default async function AdvisorPage() {
 
         {homes && homes.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {homes.map((home) => (
+            {homes.map((home: Home) => (
               <div key={home.id} className="bg-alpex-card rounded-lg p-6 border border-alpex-border">
                 <h3 className="font-semibold text-white mb-1">{home.nickname || 'Unnamed Property'}</h3>
                 <p className="text-sm text-gray-400 mb-3">{home.city}, {home.state}</p>
@@ -103,7 +121,7 @@ export default async function AdvisorPage() {
           </div>
         ) : (
           <div className="bg-alpex-card rounded-lg p-8 border border-alpex-border text-center">
-            <p className="text-gray-400 mb-4">You haven't added any homes yet</p>
+            <p className="text-gray-400 mb-4">You haven&apos;t added any homes yet</p>
             <Link 
               href="/advisor/homes/new"
               className="inline-block px-4 py-2 bg-alpex-green text-black font-semibold rounded-lg hover:bg-alpex-green/90 transition-colors"
@@ -128,7 +146,7 @@ export default async function AdvisorPage() {
 
         {scenarios && scenarios.length > 0 ? (
           <div className="space-y-3">
-            {scenarios.map((scenario) => (
+            {scenarios.map((scenario: Scenario) => (
               <div key={scenario.id} className="bg-alpex-card rounded-lg p-4 border border-alpex-border flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-white">{scenario.name}</h3>

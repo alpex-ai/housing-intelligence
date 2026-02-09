@@ -35,7 +35,7 @@ export default function SignUpPage() {
         <div className="bg-alpex-card rounded-lg p-8 border border-alpex-border text-center">
           <h1 className="text-2xl font-bold text-white mb-2">Check your email</h1>
           <p className="text-gray-400">
-            We've sent you a confirmation link. Please check your email to complete your registration.
+            We&apos;ve sent you a confirmation link. Please check your email to complete your registration.
           </p>
         </div>
       </main>
